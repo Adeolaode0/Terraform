@@ -42,3 +42,14 @@ variable "desired_capacity" {
   description = "Desired instances in the Auto Scaling group"
   type        = number
 }
+
+variable "target_cpu_utilization" {
+  description = "Target average CPU utilization (%) for the target-tracking scaling policy"
+  type        = number
+  default     = 60
+
+  validation {
+    condition     = var.target_cpu_utilization >= 10 && var.target_cpu_utilization <= 90
+    error_message = "target_cpu_utilization must be between 10 and 90."
+  }
+}
