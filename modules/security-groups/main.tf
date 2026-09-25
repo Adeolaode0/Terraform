@@ -1,6 +1,6 @@
 # Least-privilege security groups: instances accept traffic ONLY from the ALB.
 resource "aws_security_group" "alb" {
-  name        = "${var.environment}-alb-sg"
+  name        = "${var.name_prefix}-alb-sg"
   description = "Allow HTTP/HTTPS to the Application Load Balancer"
   vpc_id      = var.vpc_id
 
@@ -27,11 +27,11 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "${var.environment}-alb-sg" }
+  tags = { Name = "${var.name_prefix}-alb-sg" }
 }
 
 resource "aws_security_group" "instances" {
-  name        = "${var.environment}-instance-sg"
+  name        = "${var.name_prefix}-instance-sg"
   description = "Allow HTTP from the ALB security group only"
   vpc_id      = var.vpc_id
 
@@ -50,5 +50,5 @@ resource "aws_security_group" "instances" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "${var.environment}-instance-sg" }
+  tags = { Name = "${var.name_prefix}-instance-sg" }
 }

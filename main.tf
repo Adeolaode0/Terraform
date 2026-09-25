@@ -2,35 +2,27 @@ provider "aws" {
   region = var.aws_region
 
   default_tags {
-    tags = {
-      Project     = "terraform-aws-infrastructure"
-      Environment = var.environment
-      ManagedBy   = "terraform"
-    }
+    tags = local.mandatory_tags
   }
 }
 
 module "vpc" {
-  source = "./modules/vpc"
-
-  project_name       = "tf-aws-lab"
-  environment        = var.environment
+  source             = "./modules/vpc"
+  name_prefix        = local.name_prefix
   vpc_cidr           = var.vpc_cidr
   availability_zones = var.availability_zones
   enable_nat_gateway = true
 }
 
 module "security_groups" {
-  source = "./modules/security-groups"
-
+  source      = "./modules/security-groups"
+  name_prefix = local.name_prefix
   vpc_id      = module.vpc.vpc_id
-  environment = var.environment
 }
 
 module "compute" {
-  source = "./modules/compute"
-
-  environment       = var.environment
+  source            = "./modules/compute"
+  name_prefix       = local.name_prefix
   vpc_id            = module.vpc.vpc_id
   public_subnet_ids = module.vpc.public_subnet_ids
   alb_sg_id         = module.security_groups.alb_sg_id

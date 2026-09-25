@@ -1,3 +1,14 @@
+variable "project_name" {
+  description = "Project name used in resource names and tags"
+  type        = string
+  default     = "tf-aws-lab"
+
+  validation {
+    condition     = can(regex("^[a-z0-9][a-z0-9-]{1,20}$", var.project_name))
+    error_message = "project_name must be lowercase letters, numbers, or hyphens (AWS naming-safe)."
+  }
+}
+
 variable "aws_region" {
   description = "AWS region to deploy into"
   type        = string

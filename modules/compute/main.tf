@@ -9,7 +9,7 @@ data "aws_ami" "amazon_linux" {
 }
 
 resource "aws_launch_template" "app" {
-  name_prefix   = "${var.environment}-app-"
+  name_prefix   = "${var.name_prefix}-app-"
   image_id      = data.aws_ami.amazon_linux.id
   instance_type = var.instance_type
 
@@ -25,19 +25,19 @@ resource "aws_launch_template" "app" {
 
   tag_specifications {
     resource_type = "instance"
-    tags          = { Name = "${var.environment}-app" }
+    tags          = { Name = "${var.name_prefix}-app" }
   }
 }
 
 resource "aws_lb" "app" {
-  name               = "${var.environment}-app-alb"
+  name               = "${var.name_prefix}-app-alb"
   load_balancer_type = "application"
   security_groups    = [var.alb_sg_id]
   subnets            = var.public_subnet_ids
 }
 
 resource "aws_lb_target_group" "app" {
-  name     = "${var.environment}-app-tg"
+  name     = "${var.name_prefix}-app-tg"
   port     = 80
   protocol = "HTTP"
   vpc_id   = var.vpc_id
@@ -60,7 +60,7 @@ resource "aws_lb_listener" "http" {
 }
 
 resource "aws_autoscaling_group" "app" {
-  name                = "${var.environment}-app-asg"
+  name                = "${var.name_prefix}-app-asg"
   vpc_zone_identifier = var.public_subnet_ids
   min_size            = var.min_size
   max_size            = var.max_size
@@ -75,13 +75,13 @@ resource "aws_autoscaling_group" "app" {
 
   tag {
     key                 = "Name"
-    value               = "${var.environment}-app"
+    value               = "${var.name_prefix}-app"
     propagate_at_launch = true
   }
 }
 
 resource "aws_autoscaling_policy" "cpu_target_tracking" {
-  name                   = "${var.environment}-app-cpu-scaling"
+  name                   = "${var.name_prefix}-app-cpu-scaling"
   autoscaling_group_name = aws_autoscaling_group.app.name
   policy_type            = "TargetTrackingScaling"
 
