@@ -7,3 +7,8 @@ output "asg_name" {
   description = "Name of the Auto Scaling group"
   value       = aws_autoscaling_group.app.name
 }
+
+output "launch_template_id" {
+  description = "ID of the EC2 launch template used by the Auto Scaling group"
+  value       = aws_launch_template.app.id
+}
