@@ -21,10 +21,10 @@ module "security_groups" {
 }
 
 module "compute" {
-  source            = "./modules/compute"
-  name_prefix       = local.name_prefix
-  vpc_id            = module.vpc.vpc_id
-  public_subnet_ids = module.vpc.public_subnet_ids
+  source                  = "./modules/compute"
+  name_prefix             = local.name_prefix
+  vpc_id                  = module.vpc.vpc_id
+  public_subnet_ids       = module.vpc.public_subnet_ids
   alb_sg_id               = module.security_groups.alb_sg_id
   instance_sg_id          = module.security_groups.instance_sg_id
   alb_deletion_protection = var.alb_deletion_protection
