@@ -57,8 +57,9 @@ terraform apply -var="environment=dev"
 # 4. Visit the app
 terraform output application_url
 
-# 5. Tear everything down when done
-terraform destroy -var="environment=dev"
+# 5. Tear everything down when done (disable ALB deletion protection first, it defaults to true)
+terraform apply -var="environment=dev" -var="alb_deletion_protection=false"
+terraform destroy -var="environment=dev" -var="alb_deletion_protection=false"
 ```
 
 Copy `terraform.tfvars.example` to `terraform.tfvars` to persist your variables.
@@ -67,7 +68,7 @@ Copy `terraform.tfvars.example` to `terraform.tfvars` to persist your variables.
 
 ```
 ├── main.tf                  # provider + module composition
-├── variables.tf             # root inputs (region, env, CIDR, AZs, ASG sizing)
+├── variables.tf             # root inputs (region, env, CIDR, AZs, ASG sizing, ALB deletion protection)
 ├── outputs.tf               # vpc_id, alb_dns_name, application_url
 ├── versions.tf              # Terraform + provider pins, remote-state template
 ├── modules/

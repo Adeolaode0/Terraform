@@ -30,10 +30,11 @@ resource "aws_launch_template" "app" {
 }
 
 resource "aws_lb" "app" {
-  name               = "${var.name_prefix}-app-alb"
-  load_balancer_type = "application"
-  security_groups    = [var.alb_sg_id]
-  subnets            = var.public_subnet_ids
+  name                       = "${var.name_prefix}-app-alb"
+  load_balancer_type         = "application"
+  security_groups            = [var.alb_sg_id]
+  subnets                    = var.public_subnet_ids
+  enable_deletion_protection = var.alb_deletion_protection
 }
 
 resource "aws_lb_target_group" "app" {

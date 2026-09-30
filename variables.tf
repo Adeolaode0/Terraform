@@ -96,3 +96,9 @@ variable "asg_desired_capacity" {
     error_message = "asg_desired_capacity cannot be negative."
   }
 }
+
+variable "alb_deletion_protection" {
+  description = "Enable deletion protection on the ALB (default true for prod-like safety; set false in dev for easy teardown)"
+  type        = bool
+  default     = true
+}

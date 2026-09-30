@@ -53,3 +53,9 @@ variable "target_cpu_utilization" {
     error_message = "target_cpu_utilization must be between 10 and 90."
   }
 }
+
+variable "alb_deletion_protection" {
+  description = "Enable deletion protection on the ALB (kept true to model prod-like safety)"
+  type        = bool
+  default     = true
+}
