@@ -39,7 +39,7 @@ ALB security group — no direct internet access to the instances.
 - **Compute & scaling** — launch templates, Auto Scaling groups, ALB health checks
 - **Security** — least-privilege security groups, no hardcoded secrets
 - **CI/CD** — GitHub Actions pipeline running `fmt`, `init`, and `validate` on every push/PR
-- **State management** — commented S3 + DynamoDB remote-state backend ready to enable
+- **State management** — opt-in S3 + DynamoDB remote-state backend shipped as an example
 
 ## Usage
 
@@ -64,13 +64,43 @@ terraform destroy -var="environment=dev" -var="alb_deletion_protection=false"
 
 Copy `terraform.tfvars.example` to `terraform.tfvars` to persist your variables.
 
+## Remote state
+
+Local `terraform.tfstate` files are fine for a solo demo, but teams store
+state remotely so it is shared, locked, and durable. This repo ships
+[`backend.tf.example`](backend.tf.example) -- copy it to `backend.tf` to opt in:
+
+```bash
+# 1. Create the state bucket once and turn on versioning
+aws s3api create-bucket --bucket my-terraform-state --region us-east-1
+aws s3api put-bucket-versioning --bucket my-terraform-state \
+  --versioning-configuration Status=Enabled
+
+# 2. (Classic locking) create a DynamoDB table, partition key LockID (String)
+aws dynamodb create-table --table-name terraform-state-locks \
+  --attribute-definitions AttributeName=LockID,AttributeType=S \
+  --key-schema AttributeName=LockID,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST --region us-east-1
+
+# 3. Copy the example, edit the placeholders, and migrate your state
+cp backend.tf.example backend.tf   # edit bucket/region/locking first
+terraform init                     # answer "yes" to copy existing state
+```
+
+Use a separate `key` per environment (`dev.tfstate`, `prod.tfstate`) so
+environments never share a state file. `backend.tf` itself is gitignored,
+only the example is committed. (S3-native locking via `use_lockfile = true`
+is commented in the example as an alternative to DynamoDB, for AWS provider
+5.51 and newer.)
+
 ## Project structure
 
 ```
 ├── main.tf                  # provider + module composition
+├── backend.tf.example       # optional S3 + DynamoDB remote state (copy to backend.tf)
 ├── variables.tf             # root inputs (region, env, CIDR, AZs, ASG sizing, ALB deletion protection)
 ├── outputs.tf               # vpc_id, alb_dns_name, application_url
-├── versions.tf              # Terraform + provider pins, remote-state template
+├── versions.tf              # Terraform + provider pins
 ├── modules/
 │   ├── vpc/                 # VPC, subnets, IGW, NAT, route tables
 │   ├── security-groups/     # ALB + instance security groups

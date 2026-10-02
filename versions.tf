@@ -8,12 +8,6 @@ terraform {
     }
   }
 
-  # Remote state (recommended for teams). Uncomment and fill in to use:
-  # backend "s3" {
-  #   bucket         = "REPLACE_ME-terraform-state"
-  #   key            = "terraform-aws-infrastructure/dev.tfstate"
-  #   region         = "us-east-1"
-  #   dynamodb_table = "terraform-state-locks"
-  #   encrypt        = true
-  # }
+  # Remote state (recommended for teams): copy backend.tf.example
+  # to backend.tf, fill in your values, and run `terraform init`.
 }

@@ -1,0 +1,32 @@
+# Remote state example (S3 + DynamoDB locking).
+#
+# Copy this file to backend.tf, fill in your own values, then run
+# `terraform init`. Re-running init migrates the local state file into the
+# backend -- answer "yes" when prompted.
+#
+# Before running init: create the S3 bucket once and turn on versioning and
+# default encryption, e.g.:
+#   aws s3api create-bucket --bucket my-terraform-state --region us-east-1
+#   aws s3api put-bucket-versioning --bucket my-terraform-state \
+#     --versioning-configuration Status=Enabled
+#
+# Use a separate key per environment (dev.tfstate, prod.tfstate) so
+# environments never share a state file. backend.tf itself is gitignored;
+# only this example is committed.
+
+terraform {
+  backend "s3" {
+    bucket = "my-terraform-state" # must be globally unique
+    key    = "terraform-aws-infrastructure/dev.tfstate"
+
+    region = "us-east-1"
+
+    # State locking -- pick one:
+    # 1. Classic: a DynamoDB table with partition key "LockID" (type String).
+    dynamodb_table = "terraform-state-locks"
+    # 2. S3-native locking (no extra table, needs AWS provider >= 5.51):
+    # use_lockfile = true
+
+    encrypt = true
+  }
+}
