@@ -32,4 +32,7 @@ module "compute" {
   min_size                = var.asg_min_size
   max_size                = var.asg_max_size
   desired_capacity        = var.asg_desired_capacity
+  enable_cpu_alarm        = var.enable_cpu_alarm
+  cpu_alarm_threshold     = var.cpu_alarm_threshold
+  notification_email      = var.notification_email
 }

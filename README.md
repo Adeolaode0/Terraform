@@ -30,7 +30,7 @@ ALB security group — no direct internet access to the instances.
 |--------------------|-----------|
 | `modules/vpc`      | VPC, 2 public + 2 private subnets across 2 AZs, internet gateway, NAT gateway, route tables |
 | `modules/security-groups` | ALB security group (80/443), instance security group (HTTP from ALB only) |
-| `modules/compute`  | ALB + listener + target group, launch template (Amazon Linux 2023, nginx via user data), Auto Scaling group |
+| `modules/compute`  | ALB + listener + target group, launch template (Amazon Linux 2023, nginx via user data), Auto Scaling group, CloudWatch CPU alarm + SNS alert topic (toggleable) |
 
 ## Skills demonstrated
 
@@ -39,6 +39,7 @@ ALB security group — no direct internet access to the instances.
 - **Compute & scaling** — launch templates, Auto Scaling groups, ALB health checks
 - **Security** — least-privilege security groups, no hardcoded secrets
 - **CI/CD** — GitHub Actions pipeline running `fmt`, `init`, and `validate` on every push/PR
+- **Observability** — CloudWatch alarm on ASG average CPU with SNS notifications (optional email subscription, disable via `enable_cpu_alarm = false`)
 - **State management** — opt-in S3 + DynamoDB remote-state backend shipped as an example
 
 ## Usage
@@ -98,7 +99,7 @@ is commented in the example as an alternative to DynamoDB, for AWS provider
 ```
 ├── main.tf                  # provider + module composition
 ├── backend.tf.example       # optional S3 + DynamoDB remote state (copy to backend.tf)
-├── variables.tf             # root inputs (region, env, CIDR, AZs, ASG sizing, ALB deletion protection)
+├── variables.tf             # root inputs (region, env, CIDR, AZs, ASG sizing, ALB deletion protection, CPU alarm)
 ├── outputs.tf               # vpc_id, alb_dns_name, application_url
 ├── versions.tf              # Terraform + provider pins
 ├── modules/

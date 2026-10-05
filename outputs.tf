@@ -42,3 +42,8 @@ output "application_url" {
   description = "URL to reach the demo application"
   value       = "http://${module.compute.alb_dns_name}"
 }
+
+output "sns_topic_arn" {
+  description = "ARN of the SNS topic receiving ASG alarm notifications"
+  value       = module.compute.sns_topic_arn
+}

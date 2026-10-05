@@ -59,3 +59,31 @@ variable "alb_deletion_protection" {
   type        = bool
   default     = true
 }
+
+variable "enable_cpu_alarm" {
+  description = "Create a CloudWatch CPU alarm on the ASG with an SNS alert topic (set false to skip monitoring)"
+  type        = bool
+  default     = true
+}
+
+variable "cpu_alarm_threshold" {
+  description = "Average CPU utilization (%) that triggers the ASG alarm"
+  type        = number
+  default     = 80
+
+  validation {
+    condition     = var.cpu_alarm_threshold > 0 && var.cpu_alarm_threshold <= 100
+    error_message = "cpu_alarm_threshold must be between 1 and 100."
+  }
+}
+
+variable "notification_email" {
+  description = "Email subscribed to the alarm SNS topic (leave empty for no subscription; the subscriber must confirm via email)"
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.notification_email == "" || can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.notification_email))
+    error_message = "notification_email must be empty or a valid email address."
+  }
+}
