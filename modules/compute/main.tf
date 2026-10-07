@@ -37,6 +37,51 @@ resource "aws_lb" "app" {
   enable_deletion_protection = var.alb_deletion_protection
 }
 
+# --------------------------------------------------------------------------
+# ALB access logs (commented example)
+#
+# Uncomment the pieces below to ship ALB request logs to S3. Useful for
+# debugging 5xx errors, auditing traffic, or running Athena queries.
+# Logs land under s3://<bucket>/<prefix>/AWSLogs/<account-id>/... with a
+# typical delivery lag of about 5 minutes.
+#
+#   # 1. Log bucket with an ELB write policy (add a data source for
+#   #    aws_caller_identity, or hard-code your account ID):
+#
+#   resource "aws_s3_bucket" "alb_access_logs" {
+#     bucket        = "${var.name_prefix}-alb-access-logs"
+#     force_destroy = true # dev only; remove for production
+#   }
+#
+#   resource "aws_s3_bucket_policy" "alb_access_logs" {
+#     bucket = aws_s3_bucket.alb_access_logs.id
+#     policy = jsonencode({
+#       Version = "2012-10-17"
+#       Statement = [{
+#         Effect    = "Allow"
+#         Principal = { Service = "elasticloadbalancing.amazonaws.com" }
+#         Action    = "s3:PutObject"
+#         Resource  = "${aws_s3_bucket.alb_access_logs.arn}/*"
+#         Condition = {
+#           StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
+#           ArnLike      = { "aws:SourceArn" = aws_lb.app.arn }
+#         }
+#       }]
+#     })
+#   }
+#
+#   # 2. Wire the bucket into the load balancer (merge with aws_lb.app):
+#
+#   access_logs {
+#     bucket  = aws_s3_bucket.alb_access_logs.id
+#     prefix  = "alb"
+#     enabled = true
+#   }
+#
+# Cost hygiene: add an S3 lifecycle rule expiring log objects after 90 days
+# so old logs do not accumulate indefinitely.
+# --------------------------------------------------------------------------
+
 resource "aws_lb_target_group" "app" {
   name     = "${var.name_prefix}-app-tg"
   port     = 80

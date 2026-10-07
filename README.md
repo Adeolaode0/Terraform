@@ -94,6 +94,16 @@ only the example is committed. (S3-native locking via `use_lockfile = true`
 is commented in the example as an alternative to DynamoDB, for AWS provider
 5.51 and newer.)
 
+## ALB access logs
+
+Access logging is off by default. For request-level logs (debugging 5xxs,
+traffic auditing, Athena queries), `modules/compute/main.tf` contains a
+commented, copy-paste-ready example: a log bucket with the ELB write policy
+plus the `access_logs` block for the ALB. Uncomment and adapt it; logs land
+under `s3://<bucket>/alb/AWSLogs/<account-id>/...` after about 5 minutes,
+and a lifecycle rule expiring objects after 90 days keeps the storage
+bill from growing forever.
+
 ## Project structure
 
 ```
