@@ -1,0 +1,16 @@
+# Local guardrails: run `pre-commit install` once, then these run on every commit.
+# Requires terraform, tflint; checkov hook is commented out until CI wiring lands.
+repos:
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.99.0
+    hooks:
+      - id: terraform_fmt
+      - id: terraform_validate
+      - id: terraform_tflint
+        args:
+          - --args=--init
+  # - repo: https://github.com/bridgecrewio/checkov
+  #   rev: "3.2.55"
+  #   hooks:
+  #     - id: checkov
+  #       args: [--directory, ., --quiet]
