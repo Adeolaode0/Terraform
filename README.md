@@ -52,7 +52,7 @@ export AWS_PROFILE=my-profile
 terraform init
 terraform plan -var="environment=dev"
 
-# 3. Apply (creates real AWS resources — see cost note below)
+# 3. Apply (creates real AWS resources - see the cost estimate below)
 terraform apply -var="environment=dev"
 
 # 4. Visit the app
@@ -120,12 +120,44 @@ bill from growing forever.
 └── terraform.tfvars.example
 ```
 
-## Cost note
+## Monthly cost estimate
 
-Defaults use `t3.micro` instances and a single NAT gateway (dev-friendly).
-The NAT gateway is the main cost driver (~$30/month) — set
-`enable_nat_gateway = false` in the VPC module call if you only need a
-short-lived demo, and always run `terraform destroy` when finished.
+Steady-state cost for the default configuration (`us-east-1`, On-Demand,
+730-hour month, demo-level traffic). Unit rates checked against AWS pricing
+in October 2026:
+
+| Resource                          | Unit rate                    | Qty | Monthly      |
+|-----------------------------------|------------------------------|-----|--------------|
+| EC2 `t3.micro` (ASG, desired = 2)  | $0.0104/hr                   | 2   | ~$15.19      |
+| Application Load Balancer         | $0.0225/hr + $0.008/LCU-hr   | 1   | ~$16.43 + LCU|
+| NAT gateway (hourly)              | $0.045/hr                    | 1   | ~$32.85      |
+| NAT gateway public IPv4           | $0.005/hr                    | 1   | ~$3.65       |
+| NAT data processing               | $0.045/GB                    | ~0  | ~$0          |
+| CloudWatch CPU alarm              | free (first 10 alarms)       | 1   | $0           |
+| SNS topic + email alerts          | free tier (1,000 msgs/month) | 1   | $0           |
+| VPC, subnets, IGW, route tables, security groups | free       | -   | $0           |
+| **Total**                         |                              |     | **~$68.12**  |
+
+Notes:
+
+- The ALB's LCU line is negligible at demo traffic (one LCU covers 25 new
+  connections/sec, 3,000 active connections/min, and 1 GB processed per
+  hour). It becomes the line to watch under real load.
+- The NAT gateway is the surprise cost in this config: nothing runs in the
+  private subnets yet (instances launch in public subnets), so its $36.50
+  fixed charge buys idle plumbing. For a short-lived demo, set
+  `enable_nat_gateway = false` in the VPC module call to drop the total to
+  about $31.62/month.
+- Auto Scaling moves the EC2 line: desired capacity is 2 by default and can
+  grow to 3 (`asg_max_size`), which adds one more $7.59 instance while
+  scaled out.
+- New AWS accounts get 12 months of free tier (750 ALB hours and 750 EC2
+  micro hours per month), which can zero out most of this table for a year.
+- Data transfer out to the internet is $0.09/GB after the account's
+  100 GB/month free allowance. Small here, but the line to model for a real
+  deployment.
+- Always run `terraform destroy` when finished. ALB deletion protection
+  defaults to `true`, so disable it first (see Usage step 5).
 
 ## Roadmap
 
