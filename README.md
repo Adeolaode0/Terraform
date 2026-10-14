@@ -7,19 +7,55 @@ behind an Application Load Balancer. Every push is checked by GitHub Actions
 
 ## Architecture
 
+Request path (what happens on every page load):
+
 ```
-                        ┌─────────────────────────────┐
-                        │        AWS Region           │
-                        │                             │
-  Internet ──▶ │  Application Load Balancer  │ ──▶ │ Auto Scaling Group (EC2 + nginx) │
-                        │   (public subnets, 2 AZs)   │     │  (launch template, health checks)  │
-                        └─────────────────────────────┘
-                        │        VPC 10.0.0.0/16      │
-                        │  public subnets: 10.0.0.0/24, 10.0.1.0/24   │
-                        │  private subnets: 10.0.10.0/24, 10.0.11.0/24 │
-                        │  IGW + NAT gateway, per-tier route tables   │
-                        └─────────────────────────────┘
+Internet (users)
+  |
+  v  HTTP :80
+ALB -- public subnets, spans AZ-a + AZ-b
+  Listener :80 -> target group :80, health check GET / on :80
+  ALB SG: 80/443 in from 0.0.0.0/0; deletion protection on (default)
+  |
+  v  HTTP :80 -- instance SG allows HTTP only from the ALB SG
+ASG -- EC2 + nginx (Amazon Linux 2023, launch template)
+  min 1 / desired 2 / max 3, t3.micro (defaults)
+  Target tracking: ASG average CPU -> 60% (default)
+  Placement: public subnets in both AZs
 ```
+
+VPC layout:
+
+```
+VPC 10.0.0.0/16 (us-east-1)
+  |
+  +-- AZ-a (us-east-1a)
+  |     Public  10.0.0.0/24  -- ALB, ASG instances, NAT gateway + EIP
+  |     Private 10.0.10.0/24 -- provisioned, no workloads yet
+  |
+  +-- AZ-b (us-east-1b)
+        Public  10.0.1.0/24  -- ALB, ASG instances
+        Private 10.0.11.0/24 -- provisioned, no workloads yet
+
+Routes:  public  0.0.0.0/0 -> internet gateway
+         private 0.0.0.0/0 -> NAT gateway (single, in the AZ-a public subnet)
+
+Monitoring: ASG avg CPU > threshold (80% default) for 2 x 5 min -> CloudWatch alarm
+            -> SNS topic -> email (only when notification_email is set)
+```
+
+Notes:
+
+- The private subnets are provisioned but empty: the ASG runs in the
+  public subnets today. They are reserved for the planned RDS module,
+  which is why the NAT gateway exists before anything uses it.
+- The ALB security group already allows 443, but there is no HTTPS
+  listener yet (see the Roadmap). Opening the port now means adding
+  the ACM listener later needs no security-group change.
+- There is one NAT gateway, in AZ-a. If AZ-a fails, the private
+  subnets lose outbound internet until it recovers. A per-AZ NAT
+  gateway would fix that at roughly double the NAT cost.
+- ALB access logs are off by default; see "ALB access logs" below.
 
 Security groups follow least privilege: instances accept HTTP **only** from the
 ALB security group — no direct internet access to the instances.
