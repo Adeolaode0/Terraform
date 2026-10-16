@@ -195,6 +195,52 @@ Notes:
 - Always run `terraform destroy` when finished. ALB deletion protection
   defaults to `true`, so disable it first (see Usage step 5).
 
+## FAQ
+
+**Where is the Terraform state stored?**
+Locally, in `terraform.tfstate`, by default. That is fine for a solo demo.
+For anything shared, copy [`backend.tf.example`](backend.tf.example) to
+`backend.tf` to move state to S3 with DynamoDB locking; see "Remote state"
+above. `backend.tf` and `terraform.tfstate` are both gitignored — state
+must never be committed.
+
+**How do I pass AWS credentials?**
+Through the AWS SDK chain Terraform inherits: `AWS_PROFILE` env var,
+SSO (`aws sso login`), or a shared credentials file. Never put access keys
+in `terraform.tfvars`, variables, or anywhere in the repo — `terraform.tfvars`
+is gitignored for a reason.
+
+**How do I tear everything down?**
+ALB deletion protection defaults to `true` for prod-like safety, and it
+blocks `terraform destroy`. Turn it off first, then destroy (see Usage step 5):
+
+```bash
+terraform apply -var="alb_deletion_protection=false"
+terraform destroy
+```
+
+**Can I deploy to a different region?**
+Yes: `-var="region=eu-west-1"` (or set `region` in `terraform.tfvars`).
+The default AZs are `us-east-1a/b`, so override `azs` with two AZs in the
+target region. Pricing in the cost table is `us-east-1` On-Demand and will
+differ slightly elsewhere.
+
+**How much does the default config cost?**
+About $68/month steady-state, most of it the NAT gateway and ALB idle
+charges (see the cost table). New accounts get 12 months of free tier that
+can zero out the ALB and EC2 lines. For a short-lived demo, set
+`enable_nat_gateway = false` to cut the total roughly in half.
+
+**Do I need the S3 backend to get started?**
+No. Run `terraform init` and `terraform plan` with local state first; add
+the remote backend once you have a team or CI applying changes.
+
+**Why are the private subnets empty?**
+They are reserved for the planned RDS module — the NAT gateway exists so
+that future database subnet has outbound internet (e.g., for patching)
+without being directly reachable. Until then the ASG runs in the public
+subnets.
+
 ## Roadmap
 
 - [ ] Remote state backend (S3 + DynamoDB) enabled
