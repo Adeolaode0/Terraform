@@ -82,6 +82,91 @@ resource "aws_lb" "app" {
 # so old logs do not accumulate indefinitely.
 # --------------------------------------------------------------------------
 
+# --------------------------------------------------------------------------
+# WAFv2 web ACL association (commented example)
+#
+# Uncomment the pieces below to put AWS WAFv2 in front of the ALB. Shields
+# the app from common web exploits (SQL injection, cross-site scripting)
+# and throttles request floods from a single IP.
+#
+#   # 1. Web ACL with AWS managed rules (REGIONAL scope: ALBs are regional):
+#
+#   resource "aws_wafv2_web_acl" "app" {
+#     name  = "${var.name_prefix}-app-waf"
+#     scope = "REGIONAL"
+#
+#     default_action {
+#       allow {}
+#     }
+#
+#     # AWS Managed Common Rule Set: OWASP Top 10 coverage (SQLi, XSS, etc.)
+#     rule {
+#       name     = "AWSManagedRulesCommonRuleSet"
+#       priority = 10
+#
+#       override_action {
+#         none {}
+#       }
+#
+#       statement {
+#         managed_rule_group_statement {
+#           name        = "AWSManagedRulesCommonRuleSet"
+#           vendor_name = "AWS"
+#         }
+#       }
+#
+#       visibility_config {
+#         cloudwatch_metrics_enabled = true
+#         metric_name                = "${var.name_prefix}-app-waf-common"
+#         sampled_requests_enabled   = true
+#       }
+#     }
+#
+#     # Rate-based rule: blocks IPs sending more than 2,000 requests
+#     # in any 5-minute window
+#     rule {
+#       name     = "RateLimitPerIP"
+#       priority = 20
+#
+#       action {
+#         block {}
+#       }
+#
+#       statement {
+#         rate_based_statement {
+#           limit              = 2000
+#           aggregate_key_type = "IP"
+#         }
+#       }
+#
+#       visibility_config {
+#         cloudwatch_metrics_enabled = true
+#         metric_name                = "${var.name_prefix}-app-waf-rate"
+#         sampled_requests_enabled   = true
+#       }
+#     }
+#
+#     visibility_config {
+#       cloudwatch_metrics_enabled = true
+#       metric_name                = "${var.name_prefix}-app-waf"
+#       sampled_requests_enabled   = true
+#     }
+#   }
+#
+#   # 2. Associate the web ACL with the ALB:
+#
+#   resource "aws_wafv2_web_acl_association" "app" {
+#     resource_arn = aws_lb.app.arn
+#     web_acl_arn  = aws_wafv2_web_acl.app.arn
+#   }
+#
+# Cost hygiene: a web ACL is about $5/month plus $1 per million requests,
+# with AWS managed rule groups adding about $1 more per million requests.
+# Deploy new managed rules in count mode first (override_action { count {} })
+# so you can inspect sampled requests for false positives before blocks
+# start dropping legitimate traffic.
+# --------------------------------------------------------------------------
+
 resource "aws_lb_target_group" "app" {
   name     = "${var.name_prefix}-app-tg"
   port     = 80

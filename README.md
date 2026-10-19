@@ -140,6 +140,20 @@ under `s3://<bucket>/alb/AWSLogs/<account-id>/...` after about 5 minutes,
 and a lifecycle rule expiring objects after 90 days keeps the storage
 bill from growing forever.
 
+## WAFv2 protection
+
+The ALB is internet-facing with no WAF by default. For layer-7 defense
+(SQL injection, cross-site scripting, request floods),
+`modules/compute/main.tf` contains a commented, copy-paste-ready example:
+an `aws_wafv2_web_acl` with the AWS Managed Common Rule Set and a
+2,000-requests-per-5-minutes per-IP rate limit, plus the
+`aws_wafv2_web_acl_association` that binds it to the ALB. Uncomment and
+adapt it; deploy new managed rules in count mode first so you can inspect
+sampled requests for false positives before blocks start dropping
+legitimate traffic. Expect roughly $5/month per web ACL plus about $1
+per million requests, with the managed rule group adding roughly $1 more
+per million.
+
 ## Project structure
 
 ```
