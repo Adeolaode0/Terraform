@@ -15,6 +15,23 @@ resource "aws_launch_template" "app" {
 
   vpc_security_group_ids = [var.instance_sg_id]
 
+  # Require IMDSv2: closes the SSRF-style metadata theft path on compromised apps
+  metadata_options {
+    http_endpoint = "enabled"
+    http_tokens   = "required"
+  }
+
+  # Encrypt the root volume at rest (AWS-managed KMS key)
+  block_device_mappings {
+    device_name = "/dev/xvda"
+
+    ebs {
+      encrypted   = true
+      volume_size = 20
+      volume_type = "gp3"
+    }
+  }
+
   user_data = base64encode(<<-EOF
     #!/bin/bash
     dnf install -y nginx
